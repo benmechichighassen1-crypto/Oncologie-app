@@ -64,6 +64,21 @@
         @endforeach
         </tbody>
     </table>
-    {{ $lignes->links() }}
+    {{-- Pas de links() : sa vue par défaut (Tailwind) affiche des flèches géantes, l'appli n'a pas Tailwind. --}}
+    @if($lignes->hasPages())
+        <div class="filtres" style="justify-content:center;margin-top:14px">
+            @if($lignes->onFirstPage())
+                <span class="btn sec" aria-disabled="true">‹ Précédent</span>
+            @else
+                <a class="btn sec" href="{{ $lignes->previousPageUrl() }}" rel="prev">‹ Précédent</a>
+            @endif
+            <span class="doux">Page {{ $lignes->currentPage() }} sur {{ $lignes->lastPage() }} · {{ $lignes->total() }} lignes</span>
+            @if($lignes->hasMorePages())
+                <a class="btn sec" href="{{ $lignes->nextPageUrl() }}" rel="next">Suivant ›</a>
+            @else
+                <span class="btn sec" aria-disabled="true">Suivant ›</span>
+            @endif
+        </div>
+    @endif
 </div>
 @endsection

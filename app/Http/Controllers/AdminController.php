@@ -78,7 +78,12 @@ class AdminController extends Controller
             'stats_portee' => ['required', Rule::in(array_keys(Droits::PORTEES_STATS))],
             'stats_medecins' => ['nullable', 'array'],
             'stats_medecins.*' => ['string', 'max:10'],
+            'chimio_saisie' => ['nullable', 'boolean'],
+            'chimio_ok' => ['nullable', 'boolean'],
+            'chimio_administration' => ['nullable', 'boolean'],
         ]);
+        $chimio = ['chimio_saisie' => (bool) ($data['chimio_saisie'] ?? false), 'chimio_ok' => (bool) ($data['chimio_ok'] ?? false),
+            'chimio_administration' => (bool) ($data['chimio_administration'] ?? false)];
         $avant = [
             'acces' => DB::table('onco_acces')->where('user_name', $userName)->first(),
             'medecins' => DB::table('onco_acces_medecins')->where('user_name', $userName)->pluck('cod_med')->all(),
@@ -87,8 +92,8 @@ class AdminController extends Controller
         $medecins = $data['portee'] === 'liste' ? array_values(array_unique($data['medecins'] ?? [])) : [];
         $statsMedecins = $data['stats_portee'] === 'liste' ? array_values(array_unique($data['stats_medecins'] ?? [])) : [];
 
-        DB::transaction(function () use ($userName, $data, $medecins, $statsMedecins, $request) {
-            DB::table('onco_acces')->updateOrInsert(['user_name' => $userName], [
+        DB::transaction(function () use ($userName, $data, $medecins, $statsMedecins, $request, $chimio) {
+            DB::table('onco_acces')->updateOrInsert(['user_name' => $userName], $chimio + [
                 'portee' => $data['portee'],
                 'stats_portee' => $data['stats_portee'] === 'identique' ? null : $data['stats_portee'],
                 'admin' => (bool) ($data['admin'] ?? false),
@@ -108,7 +113,7 @@ class AdminController extends Controller
         Journal::ecrire('modification_droits', ['details' => [
             'compte' => $userName,
             'avant' => $avant,
-            'apres' => ['portee' => $data['portee'], 'admin' => (bool) ($data['admin'] ?? false), 'medecins' => $medecins,
+            'apres' => $chimio + ['portee' => $data['portee'], 'admin' => (bool) ($data['admin'] ?? false), 'medecins' => $medecins,
                 'stats_portee' => $data['stats_portee'], 'stats_medecins' => $statsMedecins],
         ]]);
 

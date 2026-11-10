@@ -25,6 +25,12 @@
         @include('admin.partials.medecins', ['champ' => 'stats_medecins', 'portee' => 'stats_portee', 'choisis' => $statsChoisis,
             'titre' => 'Médecins visibles dans les statistiques', 'aide' => 'portée « Son activité et des médecins choisis »'])
 
+        <h2 style="margin-top:22px">Chimiothérapie</h2>
+        <p class="doux" style="margin-top:-4px">Un compte associé à un médecin a déjà la saisie et le « OK chimio ». Cochez ici les droits des autres agents (infirmiers…). Ils doivent aussi pouvoir voir les patients concernés.</p>
+        @foreach(['chimio_saisie' => 'Saisir les traitements, doses et constantes', 'chimio_ok' => 'Donner le « OK chimio » d\'un jour', 'chimio_administration' => 'Signer l\'administration des produits'] as $droit => $libelle)
+            <p><label><input type="hidden" name="{{ $droit }}" value="0"><input type="checkbox" name="{{ $droit }}" value="1" @checked($acces->$droit ?? false)> {{ $libelle }}</label></p>
+        @endforeach
+
         <p><label><input type="hidden" name="admin" value="0"><input type="checkbox" name="admin" value="1" @checked($acces->admin ?? false)> Administrateur de l'application (paramétrage des accès et journal)</label></p>
         @if($errors->any())<p class="erreur">{{ $errors->first() }}</p>@endif
         <button class="btn" type="submit">Enregistrer</button>

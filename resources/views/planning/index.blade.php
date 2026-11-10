@@ -20,15 +20,37 @@
     .pastille { display:inline-block; width:10px; height:10px; border-radius:3px; }
     .statuts label { display:inline-flex; align-items:center; cursor:pointer; padding:3px 8px; border:1px solid var(--bord); border-radius:999px; background:#fff; }
     .statuts input { display:none; } .statuts input:not(:checked) + span { opacity:.35; text-decoration:line-through; }
-    .legende { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12px; }
+    .legende { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:13px; }
     #compteurs { margin-left:auto; font-size:12px; }
-    #calendrier { background:#fff; font-size:12px; }
+    #calendrier { background:#fff; font-size:13.5px; }
     .aller-a { margin-left:8px; padding:5px 8px; font:inherit; font-size:13px; border:1px solid var(--bord); border-radius:6px; vertical-align:middle; cursor:pointer; }
     .fc-event { cursor:pointer; border-width:0 0 0 4px !important; border-radius:3px; }
     .fc .fc-timegrid-event .fc-event-main { padding:0 3px; line-height:1.2; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-    .fc .fc-timegrid-slot { height:1.6em; }
+    .fc .fc-timegrid-slot { height:1.9em; }
     .fc .fc-timegrid-more-link { font-size:11px; background:#e2e8f0; }
     .fc .fc-list-event-title small { color:#64748b; }
+    /* Jour actuel : en-tête marine et colonne encadrée, repérables même quand les séances remplissent la colonne. */
+    #calendrier .fc-col-header-cell.fc-day-today { background:var(--bleu); }
+    #calendrier .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color:#fff; font-weight:700; }
+    #calendrier .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion::after { content:" · Aujourd'hui"; }
+    #calendrier .fc-daygrid-day.fc-day-today { background:#fef3c7; box-shadow:inset 2px 0 0 var(--bleu), inset -2px 0 0 var(--bleu), inset 0 -2px 0 var(--bleu); }
+    /* Semaine : une séance par ligne, triée par heure, nom complet. */
+    #calendrier .fc-scrollgrid-section-sticky > * { top:var(--haut-barre, 0px); }
+    .fc-dayGridWeek-view .fc-day-sat, .fc-dayGridWeek-view .fc-day-sun { width:8%; }
+    .fc-dayGridWeek-view .fc-daygrid-event { margin:0 3px 2px !important; white-space:normal; color:#fff; }
+    .seance-ligne { display:flex; align-items:flex-start; gap:6px; width:100%; min-width:0; padding:2px 3px; line-height:1.25; }
+    .seance-ligne .nom { flex:1; min-width:0; overflow-wrap:anywhere; }
+    .age { white-space:nowrap; opacity:.85; font-size:.92em; }
+    .seance-ligne .num { flex:none; font-weight:600; font-variant-numeric:tabular-nums; }
+    .info-rdv { flex:none; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%;
+        border:1px solid currentColor; background:#fff; color:#475569; font:italic 700 11px/1 Georgia, serif; cursor:help; vertical-align:middle; }
+    .info-rdv:hover, .info-rdv:focus { background:#1f1d5a; border-color:#1f1d5a; color:#fff; outline:none; }
+    #detail-rdv { position:fixed; z-index:30; width:290px; padding:10px 12px; background:#fff; border:1px solid var(--bord); border-radius:8px;
+        box-shadow:0 6px 20px rgba(0,0,0,.18); font-size:13px; line-height:1.4; }
+    #detail-rdv b.titre { display:block; margin-bottom:6px; color:#1f1d5a; }
+    #detail-rdv dl { display:grid; grid-template-columns:auto 1fr; gap:2px 10px; margin:0; }
+    #detail-rdv dt { color:#64748b; } #detail-rdv dd { margin:0; }
+    #detail-rdv .heures { font-weight:600; }
 </style>
 @endpush
 @section('contenu')
@@ -62,7 +84,7 @@
     </div>
     <div class="legende doux statuts">Statut (cliquez pour filtrer) :
         @foreach($etats as $code => $etat)<label><input type="checkbox" class="etat" value="{{ $code }}" checked><span><i class="pastille" style="background:{{ $etat['couleur'] }}"></i> {{ $etat['libelle'] }}</span></label>@endforeach
-        <span>· Chimiothérapie affichée sur 15 min (heure de fin réelle dans l'info-bulle)</span>
+        <span>· Semaine : séances triées par heure · Icône <i class="info-rdv" style="cursor:default">i</i> : heures exactes Clinisys et détail de la séance</span>
     </div>
     @if(count($medecins) === 0)
         <p class="alerte">Aucun médecin n'est associé à votre compte. Demandez un accès à l'administrateur.</p>
@@ -90,11 +112,15 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     const calendrier = new FullCalendar.Calendar(document.getElementById('calendrier'), {
-        locale: 'fr', firstDay: 1, initialView: 'timeGridWeek', allDaySlot: false, nowIndicator: true,
+        locale: 'fr', firstDay: 1, initialView: 'dayGridWeek', allDaySlot: false, nowIndicator: true,
         slotDuration: '00:15:00', slotLabelInterval: '01:00', slotMinTime: '07:00:00', slotMaxTime: '24:00:00', // la radiothérapie travaille parfois jusqu'à 23 h
         expandRows: true, height: 'auto', eventMaxStack: 4, slotEventOverlap: false, displayEventEnd: false,
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'timeGridWeek,timeGridDay,listDay,listWeek' },
-        buttonText: { today: "Aujourd'hui", week: 'Semaine', day: 'Jour', listDay: 'Liste du jour', listWeek: 'Liste semaine' },
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridWeek,timeGridDay,listDay,listWeek' },
+        buttonText: { today: "Aujourd'hui", dayGridWeek: 'Semaine', day: 'Jour', listDay: 'Liste du jour', listWeek: 'Liste semaine' },
+        eventDisplay: 'block', // au niveau du calendrier : ignoré dans « views » (fond et bordure de statut absents)
+        views: { dayGridWeek: { eventOrder: 'start,title', dayMaxEvents: false } },
+        stickyHeaderDates: true,
+        eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
         moreLinkContent: arg => '+' + arg.num,
         events: function (info, ok, ko) {
             const p = parametres();
@@ -110,19 +136,67 @@ document.addEventListener('DOMContentLoaded', function () {
         eventContent: function (arg) {
             const x = arg.event.extendedProps;
             const detail = [x.seance, x.ressource].filter(Boolean).map(echapper).join(' · ');
+            // title="" : pas d'info-bulle du navigateur par-dessus le détail de l'icône.
+            const info = '<span class="info-rdv" role="button" tabindex="0" title="" aria-label="Détail de la séance" data-id="' + echapper(arg.event.id) + '">i</span>';
+            const age = x.age !== null ? ' <span class="age">' + x.age + ' ans</span>' : '';
             if (arg.view.type.startsWith('list')) {
-                return { html: echapper(arg.event.title) + ' <small>' + [x.type, x.etat, detail, x.medecin].filter(Boolean).map(echapper).join(' · ') + '</small>' };
+                return { html: echapper(arg.event.title) + age + ' ' + info + ' <small>' + [x.type, x.etat, detail, x.medecin].filter(Boolean).map(echapper).join(' · ') + '</small>' };
             }
-            return { html: '<b>' + echapper(arg.timeText) + '</b> ' + echapper(arg.event.title) + (detail ? ' <span style="opacity:.85">· ' + detail + '</span>' : '') };
-        },
-        eventDidMount: function (arg) {
-            const x = arg.event.extendedProps;
-            arg.el.title = [arg.event.title, x.type + (x.finReelle ? ' (fin ' + x.finReelle + ')' : ''), x.etat,
-                x.heurePrevue && 'Heure réelle de passage (RDV prévu à ' + x.heurePrevue + ' dans Clinisys)', x.seance && 'Séance ' + x.seance, x.ressource, x.centre, x.medecin, x.organisme, x.numdoss && 'Dossier ' + x.numdoss]
-                .filter(Boolean).join('\n');
+            if (arg.view.type === 'dayGridWeek') {
+                return { html: '<div class="seance-ligne"><span class="nom">' + echapper(arg.event.title) + age + '</span>' + (x.seance ? '<span class="num">' + echapper(x.seance) + '</span>' : '') + info + '</div>' };
+            }
+            return { html: info + ' <b>' + echapper(arg.timeText) + '</b> ' + echapper(arg.event.title) + age + (detail ? ' <span style="opacity:.85">· ' + detail + '</span>' : '') };
         },
     });
     calendrier.render();
+
+    // Les dates de la semaine restent visibles sous la barre de filtres quand on fait défiler.
+    const barre = document.querySelector('.barre');
+    const caler = () => document.documentElement.style.setProperty('--haut-barre', barre.offsetHeight + 'px');
+    new ResizeObserver(caler).observe(barre); caler();
+
+    // Icône « i » : heures exactes Clinisys et détail de la séance (survol, ou clic sur écran tactile).
+    const panneau = document.createElement('div');
+    panneau.id = 'detail-rdv'; panneau.hidden = true; panneau.setAttribute('role', 'tooltip');
+    document.body.append(panneau);
+    const fermerDetail = () => { panneau.hidden = true; delete panneau.dataset.id; };
+    function ouvrirDetail(icone) {
+        const ev = calendrier.getEventById(icone.dataset.id);
+        if (!ev) return;
+        const x = ev.extendedProps;
+        const libelle = { CONSULTATION: 'Consultation', CHIMIO: 'Chimiothérapie', RADIO: 'Radiothérapie' }[x.type] ?? x.type;
+        const lignes = [
+            ['RDV Clinisys', x.heureRdv + (x.finRdv ? ' – ' + x.finRdv : ''), true],
+            ['Début traitement', x.debutReel, true], ['Fin traitement', x.finReel, true],
+            ['Âge', x.age !== null ? x.age + ' ans' : null], ['Type', libelle], ['Statut', x.etat], ['Séance', x.seance], ['Appareil', x.ressource], ['Centre', x.centre],
+            ['Médecin', x.medecin], ['Organisme', x.organisme], ['Dossier', x.numdoss],
+        ].filter(l => l[1]);
+        panneau.innerHTML = '<b class="titre">' + echapper(ev.title) + '</b><dl>'
+            + lignes.map(([l, v, h]) => '<dt>' + echapper(l) + '</dt><dd' + (h ? ' class="heures"' : '') + '>' + echapper(v) + '</dd>').join('') + '</dl>';
+        panneau.dataset.id = icone.dataset.id;
+        panneau.hidden = false;
+        // À côté de l'icône, sans sortir de l'écran.
+        const r = icone.getBoundingClientRect(), h = panneau.offsetHeight, l = panneau.offsetWidth;
+        panneau.style.left = Math.max(8, r.right + 8 + l > innerWidth ? r.left - l - 8 : r.right + 8) + 'px';
+        panneau.style.top = Math.max(8, Math.min(r.top - 8, innerHeight - h - 8)) + 'px';
+    }
+    const cal = document.getElementById('calendrier');
+    cal.addEventListener('mouseover', e => { const i = e.target.closest('.info-rdv'); if (i) ouvrirDetail(i); });
+    cal.addEventListener('mouseout', e => { if (e.target.closest('.info-rdv')) fermerDetail(); });
+    cal.addEventListener('focusin', e => { const i = e.target.closest('.info-rdv'); if (i) ouvrirDetail(i); });
+    cal.addEventListener('focusout', e => { if (e.target.closest('.info-rdv')) fermerDetail(); });
+    // En capture : le clic sur l'icône ne doit pas ouvrir le dossier du patient (lien de la séance).
+    cal.addEventListener('click', e => {
+        const i = e.target.closest('.info-rdv'); if (!i) return;
+        e.preventDefault(); e.stopPropagation(); ouvrirDetail(i);
+    }, true);
+    cal.addEventListener('keydown', e => {
+        const i = e.target.closest('.info-rdv');
+        if (i && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); ouvrirDetail(i); }
+    }, true);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerDetail(); });
+    document.addEventListener('scroll', fermerDetail, true);
+    document.addEventListener('click', e => { if (!e.target.closest('.info-rdv')) fermerDetail(); });
 
     // Petit calendrier à côté de « Aujourd'hui » : aller directement à une date éloignée.
     const allerA = document.createElement('input');

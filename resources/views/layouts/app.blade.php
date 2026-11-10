@@ -8,14 +8,15 @@
     <style>
         :root { --bleu:#1e3a8a; --fond:#f1f5f9; --bord:#e2e8f0; --texte:#0f172a; --doux:#64748b; }
         * { box-sizing: border-box; }
-        body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--fond); color:var(--texte); font-size:14px; }
+        body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--fond); color:var(--texte); font-size:15px; }
         header { background:var(--bleu); color:#fff; display:flex; align-items:center; gap:24px; padding:10px 20px; flex-wrap:wrap; }
         header a { color:#dbeafe; text-decoration:none; font-weight:500; }
         header a.actif, header a:hover { color:#fff; }
         header .marque { font-weight:700; font-size:16px; color:#fff; }
         header .droite { margin-left:auto; display:flex; align-items:center; gap:12px; }
         header button { background:transparent; border:1px solid #93c5fd; color:#fff; border-radius:6px; padding:4px 10px; cursor:pointer; }
-        main { padding:20px; max-width:1500px; margin:0 auto; }
+        /* Toute la largeur de l'écran (demande du 27/10), texte un peu plus grand. */
+        main { padding:16px 20px; max-width:none; margin:0; }
         .carte { background:#fff; border:1px solid var(--bord); border-radius:10px; padding:16px; margin-bottom:16px; }
         h1 { font-size:20px; margin:0 0 12px; } h2 { font-size:16px; margin:0 0 10px; }
         table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--bord); vertical-align:top; }
