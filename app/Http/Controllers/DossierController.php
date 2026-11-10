@@ -77,6 +77,8 @@ class DossierController extends Controller
             'consultations' => $this->consultations($admissions, $seances, $notes, $versions, $antecedents, $prescriptions),
             'dossierDuJour' => $this->typeDossier($admissions, $seances, date('Y-m-d')),
             'protocoles' => $this->protocoles($identifiant),
+            'traitementsChimio' => app(\App\Repositories\TraitementsChimio::class)->duPatient($identifiant),
+            'scanners' => DB::table('onco_scanners')->where('identifiant', $identifiant)->whereNull('masque_le')->orderByDesc('saisi_le')->get(),
             'protocolesActifs' => $this->chimio->protocolesActifs(),
             'onglet' => $request->query('onglet', 'dossier'),
         ]);
@@ -492,6 +494,12 @@ class DossierController extends Controller
         return response()->json($this->chimio->rechercherMedicaments($q));
     }
 
+    /** Catalogue des examens de radiologie (copie de Clinisys) : filtré dans le navigateur pendant la frappe. */
+    public function examens()
+    {
+        return response()->json(DB::table('onco_ref_examens')->orderBy('libelle')->pluck('libelle')->unique()->values());
+    }
+
     /** Lignes d'un protocole paramétré, pour préremplir le formulaire de prescription. */
     public function lignesProtocole(Request $request, int $codProt)
     {
@@ -693,7 +701,7 @@ class DossierController extends Controller
     }
 
     /** Charge le patient et refuse l'accès s'il n'est suivi par aucun médecin autorisé. */
-    private function charger(ClinisysUser $user, string $identifiant): array
+    public function charger(ClinisysUser $user, string $identifiant): array
     {
         abort_unless(preg_match('/^[A-Za-z0-9]{1,20}$/', $identifiant), 404);
         $patient = $this->memo($identifiant, 'patient', fn () => $this->dossiers->patient($identifiant));

@@ -149,13 +149,14 @@
 
     <div>
             {{-- Réduit par défaut ; protocoles du plus récent au plus ancien. --}}
-            <details class="consult protocoles" @if(session('statut') && str_starts_with(session('statut'), 'Protocole')) open @endif>
-                <summary class="consult-tete" style="cursor:pointer"><b>Protocoles de chimiothérapie</b> <span class="meta">({{ count($protocoles) }}, du plus récent au plus ancien · cliquer pour afficher)</span></summary>
+            {{-- Ouvert si un traitement de l'appli existe : ses cures doivent se voir sans chercher. --}}
+            <details class="consult protocoles" @if(count($traitementsChimio) || (session('statut') && str_starts_with(session('statut'), 'Protocole'))) open @endif>
+                <summary class="consult-tete" style="cursor:pointer"><b>Protocoles de chimiothérapie</b> <span class="meta">({{ count($traitementsChimio) + count($protocoles) }}, du plus récent au plus ancien · cliquer pour afficher)</span></summary>
                 <div class="consult-corps" style="padding:0">
-                    <details class="protocole" id="prescrire-protocole">
-                        <summary style="color:var(--bleu);font-weight:600">@include('partials.icone', ['n' => 'plus']) Prescrire un protocole</summary>
-                        @include('dossier.partials.protocole-form', ['onglet' => 'dossier'])
-                    </details>
+                    <div style="padding:8px 12px;border-bottom:1px solid var(--bord)">
+                        <a class="btn" href="{{ route('chimio.index', $id) }}">@include('partials.icone', ['n' => 'plus']) Nouveau traitement chimio</a>
+                    </div>
+                    @include('chimio._liste')
                     @foreach($protocoles as $pr)
                         @php $cu = $pr['cure']; $appli = ($pr['source'] ?? '') === 'appli'; @endphp
                         <details class="protocole">
@@ -287,11 +288,11 @@
 
 {{-- ===== Prescriptions ===== --}}
 <section class="panneau {{ $onglet === 'prescriptions' ? 'actif' : '' }}" id="p-prescriptions">
-    <div style="max-width:1200px">
+    <div>
         <div class="carte">
             <h2>Nouvelle prescription</h2>
             <div class="filtres" style="margin-bottom:8px">
-                <label class="meta">Type<br><select id="rx-type">@foreach(Onco::TYPES_PRESCRIPTION as $c => $l)<option value="{{ $c }}" @selected($c === 'medicament')>{{ $l }}</option>@endforeach</select></label>
+                <label class="meta">Type<br><select id="rx-type">@foreach(Onco::TYPES_PRESCRIPTION as $c => $l)<option value="{{ $c }}" @selected($c === 'medicament')>{{ $l }}</option>@endforeach<option value="scanner" @selected(old('avertir_medecin') !== null)>Scanner de dosimétrie</option></select></label>
             </div>
             {{-- Médicament, examen, autre : saisie libre, avec suggestions de la liste des médicaments. --}}
             <form method="post" action="{{ route('dossier.prescription', $id) }}" class="filtres" id="rx-simple" style="align-items:flex-end">
@@ -307,11 +308,61 @@
                 <label class="meta">Pendant<br><input name="duree" maxlength="60" size="10" placeholder="ex. 10 jours"></label>
                 <button class="btn" type="submit">@include('partials.icone', ['n' => 'plus']) Prescrire</button>
             </form>
-            {{-- Protocole : même écran que dans le dossier (poids, taille, SC, doses). --}}
-            <div id="rx-protocole" style="display:none">
-                @include('dossier.partials.protocole-form', ['onglet' => 'prescriptions'])
+            {{-- Protocole : saisie complète par traitement, cures et jours. --}}
+            <div id="rx-protocole" style="display:none;padding:8px 0">
+                <a class="btn" href="{{ route('chimio.index', $id) }}">@include('partials.icone', ['n' => 'plus']) Nouveau traitement chimio</a>
             </div>
+            {{-- Scanner de dosimétrie : prescription avant la radiothérapie. --}}
+            <form method="post" action="{{ route('scanner.creer', $id) }}" id="rx-scanner" style="display:none">
+                @csrf
+                <div class="filtres" style="align-items:flex-start;gap:18px">
+                    <label class="meta">Date du scanner<br><input type="date" name="date_scanner" value="{{ old('date_scanner') }}"></label>
+                    <fieldset style="border:1px solid var(--bord);border-radius:8px;margin:0"><legend class="meta">Localisation</legend>
+                        @foreach(\App\Http\Controllers\ScannerDosimetrieController::LOCALISATIONS as $l)
+                            <label style="display:inline-block;width:100px"><input type="checkbox" name="localisations[]" value="{{ $l }}" @checked(in_array($l, old('localisations', []), true))> {{ $l }}</label>
+                        @endforeach
+                    </fieldset>
+                    @foreach(['avertir_medecin' => 'Avertir le médecin', 'allergie_pc' => 'Allergie au produit de contraste', 'immobilisation' => 'Immobilisation'] as $champ => $titre)
+                        <fieldset style="border:1px solid var(--bord);border-radius:8px;margin:0"><legend class="meta">{{ $titre }}</legend>
+                            <label><input type="radio" name="{{ $champ }}" value="1" required @checked(old($champ) === '1')> Oui</label>
+                            <label><input type="radio" name="{{ $champ }}" value="0" required @checked(old($champ) === '0')> Non</label>
+                        </fieldset>
+                    @endforeach
+                </div>
+                <div class="grille" style="margin-top:10px">
+                    @foreach(['contraste_iv' => 'Contraste IV', 'contraste_oral' => 'Contraste oral', 'contraste_vesical' => 'Contraste vésical', 'contraste_rectal' => 'Contraste rectal', 'type_immobilisation' => 'Type d\'immobilisation', 'limite_du' => 'Du', 'limite_jusqua' => 'Jusqu\'à', 'epaisseur_coupes' => 'Épaisseur des coupes'] as $champ => $titre)
+                        <label class="meta">{{ $titre }}<br><input name="{{ $champ }}" maxlength="{{ $champ === 'epaisseur_coupes' ? 40 : 150 }}" value="{{ old($champ) }}" style="width:100%"></label>
+                    @endforeach
+                </div>
+                <label class="meta" style="display:block;margin-top:10px">Observations<textarea name="observations" rows="2" maxlength="2000" style="width:100%">{{ old('observations') }}</textarea></label>
+                <button class="btn" type="submit" style="margin-top:8px">@include('partials.icone', ['n' => 'plus']) Prescrire le scanner</button>
+            </form>
         </div>
+        @if(count($scanners))
+            <div class="carte">
+                <h2 style="margin-top:0">Scanners de dosimétrie</h2>
+                <table>
+                    <thead><tr><th>Prescrit le</th><th>Date du scanner</th><th>Localisation</th><th>Prescripteur</th><th></th></tr></thead>
+                    @foreach($scanners as $sc)
+                        <tr>
+                            <td>{{ $d($sc->saisi_le) }}</td><td>{{ $d($sc->date_scanner) }}</td><td><b>{{ str_replace(',', ' · ', $sc->localisations) }}</b></td><td>{{ $sc->prescrit_nom }}</td>
+                            <td style="text-align:right;white-space:nowrap">
+                                <a class="btn sec" href="{{ route('scanner.fiche', [$id, $sc->id]) }}" target="_blank" rel="noopener">@include('partials.icone', ['n' => 'imprimer']) Imprimer</a>
+                                @if($sc->prescrit_par === auth()->user()->userName)
+                                    <form method="post" action="{{ route('scanner.retrait', [$id, $sc->id]) }}" style="display:inline" onsubmit="return confirm('Retirer ce scanner ?')">@csrf @method('DELETE')<button class="btn discret">Retirer</button></form>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </table>
+            </div>
+        @endif
+        @if(count($traitementsChimio))
+            <div class="carte" style="padding:0">
+                <h2 style="margin:0;padding:14px 16px 6px">Traitements de chimiothérapie</h2>
+                @include('chimio._liste')
+            </div>
+        @endif
         @php $protocolesAppli = collect($protocoles)->where('source', 'appli'); @endphp
         @if($protocolesAppli->isNotEmpty())
             <div class="carte">
@@ -379,7 +430,7 @@
 
 {{-- ===== Historique : chronologie complète du patient ===== --}}
 <section class="panneau {{ $onglet === 'historique' ? 'actif' : '' }}" id="p-historique">
-    <div class="carte" style="max-width:1200px">
+    <div class="carte">
         <div class="filtres" style="margin-bottom:10px">
             <b>Historique du patient</b>
             @foreach(collect($historique)->pluck('type')->unique()->sort() as $t)
@@ -488,10 +539,11 @@
             const t = rxType.value;
             document.getElementById('rx-type-champ').value = t;
             // style.display et non hidden : la classe .filtres impose display:flex.
-            document.getElementById('rx-simple').style.display = t === 'protocole' ? 'none' : '';
+            document.getElementById('rx-simple').style.display = t === 'protocole' || t === 'scanner' ? 'none' : '';
             document.getElementById('rx-protocole').style.display = t === 'protocole' ? '' : 'none';
+            document.getElementById('rx-scanner').style.display = t === 'scanner' ? '' : 'none';
             document.getElementById('rx-aide').textContent = t === 'medicament'
-                ? '(tapez 2 lettres : liste proposée, ou saisie libre)' : (t === 'examen' ? '(examen)' : '');
+                ? '(tapez 2 lettres : liste proposée, ou saisie libre)' : (t === 'examen' ? '(cliquez pour la liste de radiologie, ou saisie libre)' : '');
             fermerSuggestions();
         };
 
@@ -507,9 +559,28 @@
             items.forEach((el, k) => el.classList.toggle('actif', k === actif));
             items[actif].scrollIntoView({ block: 'nearest' });
         }
+        // Examens : la liste de radiologie est chargée une fois et filtrée ici ; tout texte libre reste accepté.
+        let examens = null;
+        const sansAccentsRx = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        function listerExamens() {
+            const charge = examens ? Promise.resolve(examens) : fetch('{{ route('examens.liste') }}', { headers: { Accept: 'application/json' } })
+                .then(r => r.ok ? r.json() : []).then(l => (examens = l));
+            charge.then(liste => {
+                if (rxType.value !== 'examen' || document.activeElement !== champRx) return;
+                const mots = sansAccentsRx(champRx.value).split(/\s+/).filter(Boolean);
+                const trouves = liste.filter(e => { const t = sansAccentsRx(e); return mots.every(m => t.includes(m)); });
+                boite.innerHTML = trouves.length
+                    ? trouves.map(e => '<div class="sugg" data-valeur="' + echap(e) + '">' + echap(e) + '</div>').join('')
+                    : '<div class="meta" style="padding:8px 10px">Aucun examen trouvé : votre saisie sera enregistrée telle quelle.</div>';
+                boite.hidden = false; actif = -1;
+            }).catch(fermerSuggestions);
+        }
+        // Clic aussi : après un choix, le champ garde le focus et la liste doit pouvoir se rouvrir.
+        ['focus', 'click'].forEach(ev => champRx.addEventListener(ev, () => { if (rxType.value === 'examen') listerExamens(); }));
         champRx.addEventListener('input', () => {
             clearTimeout(minuterieRx);
             const q = champRx.value.trim();
+            if (rxType.value === 'examen') { listerExamens(); return; }
             if (rxType.value !== 'medicament' || q.length < 2) { fermerSuggestions(); return; }
             minuterieRx = setTimeout(() => {
                 fetch('{{ route('medicaments.recherche') }}?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } })

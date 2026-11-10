@@ -34,9 +34,14 @@ class Referentiels
              GROUP BY codart",
             self::FAMILLES_MEDICAMENTS
         );
+        // Le catalogue seul : les vues V_list_Examen_* contiennent aussi les patients.
+        $examens = C::db()->select("SELECT CODEXAM, DESEXAM FROM ".C::t('erp', 'dbo.EXAMRAD')." WHERE Actif = 1 AND LTRIM(RTRIM(ISNULL(DESEXAM, ''))) <> ''");
 
         $t = fn ($v, $n) => ($v = trim((string) $v)) === '' ? null : mb_substr($v, 0, $n);
-        DB::transaction(function () use ($protocoles, $lignes, $chimio, $dci, $pharmacie, $t, $par) {
+        DB::transaction(function () use ($protocoles, $lignes, $chimio, $dci, $pharmacie, $examens, $t, $par) {
+            DB::table('onco_ref_examens')->delete();
+            $this->inserer('onco_ref_examens', collect($examens)->unique(fn ($e) => trim((string) $e->CODEXAM))
+                ->map(fn ($e) => ['code' => $t($e->CODEXAM, 30), 'libelle' => $t($e->DESEXAM, 255)])->values()->all());
             DB::table('onco_ref_protocole_lignes')->delete();
             DB::table('onco_ref_protocoles')->delete();
             // La liste AMMPS (onco:ammps) a sa propre mise à jour : on n'y touche pas ici.
@@ -66,12 +71,12 @@ class Referentiels
                     'dci' => preg_match('/[A-Za-z]/', (string) $a->DCI) ? $t($a->DCI, 150) : null], $pharmacie),
             ));
 
-            foreach (['protocoles' => count($protocoles), 'protocole_lignes' => count($lignes), 'dci' => count($dci), 'pharmacie' => count($pharmacie)] as $ref => $n) {
+            foreach (['protocoles' => count($protocoles), 'protocole_lignes' => count($lignes), 'dci' => count($dci), 'pharmacie' => count($pharmacie), 'examens' => count($examens)] as $ref => $n) {
                 DB::table('onco_ref_synchro')->updateOrInsert(['referentiel' => $ref], ['lignes' => $n, 'par' => $par, 'synchro_le' => now()->format('Y-m-d H:i:s')]);
             }
         });
 
-        return ['protocoles' => count($protocoles), 'lignes de protocole' => count($lignes), 'DCI' => count($dci), 'médicaments pharmacie' => count($pharmacie)];
+        return ['protocoles' => count($protocoles), 'lignes de protocole' => count($lignes), 'DCI' => count($dci), 'médicaments pharmacie' => count($pharmacie), 'examens de radiologie' => count($examens)];
     }
 
     /** Copie faite au moins une fois ? Sinon les écrans la déclenchent. */

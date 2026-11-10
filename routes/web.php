@@ -39,10 +39,31 @@ Route::middleware(['auth', 'journal'])->group(function (): void {
     Route::patch('/patients/{identifiant}/prescriptions/{id}', [DossierController::class, 'statutPrescription'])->whereNumber('id')->name('dossier.prescription.statut');
     Route::get('/patients/{identifiant}/protocoles/{numCure}', [DossierController::class, 'imprimerCure'])->whereNumber('numCure')->name('dossier.protocole');
     Route::get('/medicaments/recherche', [DossierController::class, 'rechercherMedicaments'])->name('medicaments.recherche');
+    Route::get('/examens/liste', [DossierController::class, 'examens'])->name('examens.liste');
     Route::get('/protocoles/{codProt}/lignes', [DossierController::class, 'lignesProtocole'])->whereNumber('codProt')->name('protocole.lignes');
     Route::post('/patients/{identifiant}/protocoles', [DossierController::class, 'prescrireProtocole'])->name('dossier.protocole.prescrire');
     Route::get('/patients/{identifiant}/protocoles-appli/{id}', [DossierController::class, 'imprimerProtocoleAppli'])->whereNumber('id')->name('dossier.protocole.appli');
     Route::patch('/patients/{identifiant}/protocoles-appli/{id}/arret', [DossierController::class, 'arreterProtocole'])->whereNumber('id')->name('dossier.protocole.arret');
+    Route::controller(\App\Http\Controllers\TraitementChimioController::class)->prefix('/patients/{identifiant}/chimio')->name('chimio.')->group(function (): void {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'creer')->name('creer');
+        Route::patch('/traitements/{traitement}/arret', 'arreter')->whereNumber('traitement')->name('arret');
+        Route::delete('/traitements/{traitement}', 'supprimer')->whereNumber('traitement')->name('suppression');
+        Route::get('/cures/{cure}', 'cure')->whereNumber('cure')->name('cure');
+        Route::get('/cures/{cure}/fiche', 'fiche')->whereNumber('cure')->name('fiche');
+        Route::post('/cures/{cure}/mesures', 'mesures')->whereNumber('cure')->name('mesures');
+        Route::put('/jours/{jour}', 'enregistrerJour')->whereNumber('jour')->name('jour');
+        Route::post('/jours/{jour}/ok', 'okChimio')->whereNumber('jour')->name('ok');
+        Route::post('/jours/{jour}/produits', 'ajouterProduit')->whereNumber('jour')->name('produit.ajout');
+        Route::post('/jours/{jour}/administration', 'administrerTout')->whereNumber('jour')->name('jour.administre');
+        Route::delete('/produits/{produit}', 'retirerProduit')->whereNumber('produit')->name('produit.retrait');
+        Route::post('/produits/{produit}/administration', 'administrer')->whereNumber('produit')->name('produit.administre');
+    });
+    Route::controller(\App\Http\Controllers\ScannerDosimetrieController::class)->prefix('/patients/{identifiant}/scanners')->name('scanner.')->group(function (): void {
+        Route::post('/', 'creer')->name('creer');
+        Route::get('/{scanner}/fiche', 'fiche')->whereNumber('scanner')->name('fiche');
+        Route::delete('/{scanner}', 'retirer')->whereNumber('scanner')->name('retrait');
+    });
     Route::get('/patients/{identifiant}/ordonnance', [DossierController::class, 'ordonnance'])->name('dossier.ordonnance');
     Route::delete('/patients/{identifiant}/{table}/{id}', [DossierController::class, 'masquer'])
         ->whereIn('table', ['antecedent', 'note'])->whereNumber('id')->name('dossier.masquer');

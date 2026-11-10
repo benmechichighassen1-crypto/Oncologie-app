@@ -10,7 +10,7 @@
 @push('tete')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-    main { max-width:1500px; }
+    main { max-width:none; }
     .filtres-stats { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
     .filtres-stats label { font-size:12px; color:var(--doux); display:block; } .filtres-stats input, .filtres-stats select { margin-top:3px; }
     .types label { display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border:1px solid var(--bord); border-radius:999px; cursor:pointer; color:var(--texte); font-size:13px; }

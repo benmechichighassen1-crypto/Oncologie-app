@@ -95,6 +95,28 @@ class Droits
         };
     }
 
+    /** Droits chimio : un médecin a la saisie et le « OK chimio » ; les autres agents les reçoivent dans l'écran Accès. */
+    public function peutSaisirChimio(ClinisysUser $user): bool
+    {
+        return (bool) $user->codMed || $this->droitChimio($user, 'chimio_saisie');
+    }
+
+    public function peutValiderChimio(ClinisysUser $user): bool
+    {
+        return (bool) $user->codMed || $this->droitChimio($user, 'chimio_ok');
+    }
+
+    /** Signature de l'administration : uniquement sur droit donné dans l'écran Accès. */
+    public function peutAdministrerChimio(ClinisysUser $user): bool
+    {
+        return $this->droitChimio($user, 'chimio_administration');
+    }
+
+    private function droitChimio(ClinisysUser $user, string $colonne): bool
+    {
+        return (bool) DB::table('onco_acces')->where('user_name', $user->userName)->value($colonne);
+    }
+
     public function voitMedecin(ClinisysUser $user, ?string $codMed): bool
     {
         $autorises = $this->medecinsAutorises($user);

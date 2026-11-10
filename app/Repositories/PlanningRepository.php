@@ -70,6 +70,8 @@ class PlanningRepository
             ]).', v.etatRDV AS etat, '.$this->colonnes([
                 'v.Organisme' => 'organisme', 'c.MedTrait' => 'cod_med', 'v.nomMedecin' => 'medecin',
                 'CAST(r.Code_Centre AS nvarchar(10))' => 'centre', $prevu => 'prevu',
+                'CONVERT(varchar(19), r.debut_trait, 126)' => 'debut_reel', 'CONVERT(varchar(19), r.fin_trait, 126)' => 'fin_reel',
+                'CONVERT(varchar(10), c.DatNai, 23)' => 'naissance',
             ]).'
                 FROM '.C::t('erp', $vue).' v
                 JOIN '.C::t('erp', 'dbo.Client')." c ON c.NumDoss = v.numdoss $col
@@ -94,7 +96,7 @@ class PlanningRepository
                 "r.Nom + ' ' + r.Prenom" => 'patient', 'r.startDate' => 'startDate', 'r.endDate' => 'endDate',
             ]).', NULL AS seance, '.$this->colonnes(['r.CodeRessource' => 'ressource']).', r.etatRDV AS etat, '.$this->colonnes([
                 's.DesSoc' => 'organisme', 'r.CodeMed' => 'cod_med', 'm.NomMed' => 'medecin',
-            ]).', NULL AS centre, NULL AS prevu
+            ]).', NULL AS centre, NULL AS prevu, NULL AS debut_reel, NULL AS fin_reel, '.$this->colonnes(['CONVERT(varchar(10), c.DatNai, 23)' => 'naissance']).'
                 FROM '.C::t('erp', 'centre.RdvNorm').' r
                 LEFT JOIN '.C::t('erp', 'dbo.Client')." c ON c.NumDoss = r.NumDoss $col
                 LEFT JOIN ".C::t('erp', 'dbo.Societe').' s ON s.NumSoc = c.NumSoc

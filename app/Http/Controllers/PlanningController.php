@@ -85,10 +85,15 @@ class PlanningController extends Controller
             $ressource = $s->ressource !== null ? ($ressources[(string) $s->ressource] ?? null) : null;
 
             // Une cure de chimio dure plusieurs heures : on l'affiche sur 15 min pour garder
-            // le calendrier lisible ; les vraies heures restent dans l'info-bulle.
+            // le calendrier lisible ; les vraies heures restent dans le détail (icône « i »).
             $fin = $s->type === 'CHIMIO' && $s->startDate
                 ? CarbonImmutable::parse($s->startDate)->addMinutes(15)->format('Y-m-d\TH:i:s')
                 : $s->endDate;
+            // Heures de traitement saisies dans Clinisys, ignorées si elles ne sont pas du jour du RDV.
+            $heureDuJour = fn ($v) => $v && substr($v, 0, 10) === substr((string) $s->startDate, 0, 10) ? substr($v, 11, 5) : null;
+            // Âge du jour, comme dans le dossier ; une date de naissance vide ou fictive (1900…) n'affiche rien.
+            $age = ($s->naissance ?? null) ? CarbonImmutable::parse($s->naissance)->age : null;
+            $age = $age !== null && $age <= 110 ? $age : null;
 
             return [
                 'id' => $s->type.'-'.$s->num_rdv,
@@ -103,13 +108,18 @@ class PlanningController extends Controller
                     'etat' => $etat['libelle'] ?? '',
                     'etatCode' => (int) $s->etat,
                     'seance' => $s->seance,
-                    'ressource' => $ressource ?? ($s->type === 'CONSULTATION' ? null : $s->ressource),
+                    // Pas de chaise au calendrier (demande du 02/11) : seul l'appareil de radiothérapie reste affiché.
+                    'ressource' => $s->type === 'RADIO' ? ($ressource ?? $s->ressource) : ($s->type === 'CHIMIO' ? null : $ressource),
                     'centre' => PlanningRepository::CENTRES_CHIMIO[$s->centre ?? ''] ?? null,
                     'organisme' => $s->organisme,
                     'medecin' => $s->medecin,
                     'numdoss' => $s->numdoss,
-                    'finReelle' => $s->endDate ? substr($s->endDate, 11, 5) : null,
-                    'heurePrevue' => ($s->prevu ?? null) ? substr($s->prevu, 11, 5) : null,
+                    'age' => $age,
+                    'heureRdv' => substr((string) (($s->prevu ?? null) ?: $s->startDate), 11, 5),
+                    // Radiothérapie replacée à l'heure réelle : sa fin prévue n'est plus connue ici.
+                    'finRdv' => ! ($s->prevu ?? null) && $s->endDate ? substr($s->endDate, 11, 5) : null,
+                    'debutReel' => $heureDuJour($s->debut_reel ?? null),
+                    'finReel' => $heureDuJour($s->fin_reel ?? null),
                 ],
             ];
         }, $seances));

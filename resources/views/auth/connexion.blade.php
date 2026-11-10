@@ -6,42 +6,42 @@
     <title>Connexion · Oncologie · Clinique Internationale Ibn Sina</title>
     {{-- Même présentation que l'application de pilotage d'activité. Police locale si internet est coupé. --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --marine:#1f1d5a; --sarcelle:#1f9e8f; --sarcelle-fonce:#18867a; --or:#e6b94d; --texte:#2b2d42; --doux:#6b7280; --bord:#dfe3ea; }
         * { box-sizing:border-box; }
         body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
-               font-family:'Lexend', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color:var(--texte);
+               font-family:'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color:var(--texte);
                background:linear-gradient(135deg, #e3f3f1 0%, #eef0f8 55%, #e7e9f6 100%); }
-        .carte { width:100%; max-width:1440px; min-height:min(800px, calc(100vh - 48px)); display:grid; grid-template-columns:52% 48%;
+        .carte { width:100%; max-width:1160px; min-height:min(720px, calc(100vh - 48px)); display:grid; grid-template-columns:52% 48%;
                  background:#fff; border-radius:26px; overflow:hidden; box-shadow:0 30px 70px rgba(31, 29, 90, .18); }
         .visuel { position:relative; background:#2d2b63 url('{{ asset('images/reception-ibnsina.jpg') }}') center 35% / cover no-repeat; }
         .visuel::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(31,29,90,.05) 35%, rgba(31,29,90,.55) 62%, rgba(31,29,90,.92) 100%); }
-        .visuel .texte { position:absolute; left:44px; right:44px; bottom:22px; z-index:1; color:#fff; }
-        .surtitre { color:var(--or); font-size:15px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; }
-        .visuel h2 { font-size:38px; font-weight:600; margin:10px 0 12px; }
-        .visuel p { font-size:18px; font-weight:300; line-height:1.5; margin:0 0 26px; max-width:560px; }
+        .visuel .texte { position:absolute; left:34px; right:34px; bottom:18px; z-index:1; color:#fff; }
+        .surtitre { color:var(--or); font-size:13px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; }
+        .visuel h2 { font-size:32px; font-weight:700; margin:10px 0 12px; }
+        .visuel p { font-size:15.5px; font-weight:300; line-height:1.5; margin:0 0 26px; max-width:560px; }
         .trait { width:70px; height:4px; border-radius:2px; background:var(--sarcelle); }
-        .formulaire { padding:46px 50px 34px; display:flex; flex-direction:column; }
+        .formulaire { padding:44px 48px 26px; display:flex; flex-direction:column; }
         .marque { display:flex; align-items:center; gap:16px; }
-        .marque img { width:68px; height:68px; border-radius:50%; }
-        .marque b { display:block; color:var(--marine); font-size:19px; font-weight:600; }
-        .marque span { color:var(--doux); font-size:15px; }
-        h1 { color:var(--marine); font-size:32px; font-weight:600; margin:36px 0 10px; }
-        .intro { color:var(--doux); font-size:17px; margin:0 0 22px; }
-        label { display:block; font-size:17px; margin:18px 0 10px; }
+        .marque img { width:56px; height:56px; border-radius:50%; }
+        .marque b { display:block; color:var(--marine); font-size:16px; font-weight:700; }
+        .marque span { color:var(--doux); font-size:13px; }
+        h1 { color:var(--marine); font-size:30px; font-weight:700; margin:30px 0 8px; }
+        .intro { color:var(--doux); font-size:15px; margin:0 0 16px; }
+        label { display:block; font-size:15px; margin:16px 0 8px; }
         .champ { position:relative; }
-        input { width:100%; font:inherit; font-size:17px; color:var(--texte); padding:13px 16px; border:1px solid var(--bord); border-radius:12px; outline:none; }
+        input { width:100%; font:inherit; font-size:15px; color:var(--texte); padding:10px 14px; border:1px solid var(--bord); border-radius:12px; outline:none; }
         input::placeholder { color:#9ca3af; font-weight:300; }
         input:focus { border-color:var(--sarcelle); box-shadow:0 0 0 3px rgba(31,158,143,.15); }
         .oeil { position:absolute; right:10px; top:50%; transform:translateY(-50%); border:0; background:none; cursor:pointer; color:#374151; padding:6px; }
-        .bouton { width:100%; margin-top:22px; padding:16px; font:inherit; font-size:18px; color:#fff; background:var(--sarcelle); border:0; border-radius:12px; cursor:pointer; }
+        .bouton { width:100%; margin-top:18px; padding:12px; font:inherit; font-size:15px; font-weight:500; color:#fff; background:var(--sarcelle); border:0; border-radius:12px; cursor:pointer; }
         .bouton:hover { background:var(--sarcelle-fonce); }
         .erreur { color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:10px 14px; margin:16px 0 0; font-size:15px; }
-        .avertissement { display:flex; gap:14px; margin-top:34px; padding:16px 20px; background:#e8f6f4; border:1px solid #b9e3dd; border-radius:12px; font-size:14.5px; line-height:1.55; color:#374151; }
+        .avertissement { display:flex; gap:14px; margin-top:38px; padding:14px 18px; background:#e8f6f4; border:1px solid #b9e3dd; border-radius:12px; font-size:13px; line-height:1.55; color:#374151; }
         .avertissement b { color:var(--marine); }
         .avertissement svg { flex:none; margin-top:3px; }
-        .pied { color:var(--doux); font-size:13.5px; margin-top:18px; line-height:1.6; }
+        .pied { color:var(--doux); font-size:12px; margin-top:18px; line-height:1.6; }
         @media (max-width: 900px) {
             body { padding:12px; }
             .carte { grid-template-columns:1fr; min-height:0; }
